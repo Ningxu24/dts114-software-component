@@ -1,0 +1,22 @@
+DTS114 Task2 Evidence Checklist
+
+Put your screenshots in these folders:
+
+1) Task2/evidence/01_commits/
+   - GitHub commit history page showing meaningful commits
+
+2) Task2/evidence/02_actions/
+   - GitHub Actions workflow success page (green checks)
+
+3) Task2/evidence/03_render/
+   - Render deploy success page/logs
+
+4) Task2/evidence/04_live_api/
+   - Live website home page
+   - Live API JSON result page (/api/books)
+
+Deployment URL:
+https://dts114-software-component.onrender.com
+
+Repository URL:
+https://github.com/Ningxu24/dts114-software-component
