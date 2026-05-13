@@ -1,0 +1,75 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+class Book {
+  +id: UUID
+  +isbn: String
+  +title: String
+  +author: String
+  +description: String
+  +price: Decimal
+  +stockQuantity: int
+  +publishedAt: Date
+  +isActive: boolean
+}
+
+class Genre {
+  +id: UUID
+  +name: String
+  +description: String
+}
+
+class User {
+  +id: UUID
+  +email: String
+  +passwordHash: String
+  +fullName: String
+  +phoneNumber: String
+  +createdAt: DateTime
+  +isActive: boolean
+}
+
+class Cart {
+  +id: UUID
+  +createdAt: DateTime
+  +updatedAt: DateTime
+}
+
+class Order {
+  +id: UUID
+  +orderNumber: String
+  +status: OrderStatus
+  +subtotal: Decimal
+  +tax: Decimal
+  +shippingCost: Decimal
+  +total: Decimal
+  +createdAt: DateTime
+  +placedAt: DateTime
+  +shippingAddress: String
+}
+
+class OrderItem {
+  +id: UUID
+  +quantity: int
+  +unitPrice: Decimal
+  +lineTotal: Decimal
+}
+
+enum OrderStatus {
+  DRAFT
+  PLACED
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+' Relationships
+Genre "1" <-- "0..*" Book : belongs to
+User "1" *-- "1" Cart : owns
+User "1" -- "0..*" Order : places
+Order "1" *-- "1..*" OrderItem : contains
+Cart "1" *-- "0..*" OrderItem : items
+OrderItem "1" --> "1" Book : for
+
+@enduml

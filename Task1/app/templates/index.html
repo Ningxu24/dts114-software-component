@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Online Bookstore</title>
+  <meta name="description" content="Online Bookstore - Browse and search books by genre." />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <style>
+    :root {
+      --bs-body-bg: #0b1220;
+      --bs-body-color: #e6eaf2;
+    }
+    body {
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(99, 102, 241, 0.20), transparent 55%),
+                  radial-gradient(1000px 500px at 90% 10%, rgba(34, 211, 238, 0.15), transparent 50%),
+                  var(--bs-body-bg);
+      color: var(--bs-body-color);
+      min-height: 100vh;
+    }
+    .navbar {
+      backdrop-filter: blur(10px);
+      background: rgba(11, 18, 32, 0.55) !important;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .brand-mark {
+      width: 38px; height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1, #22d3ee);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 30px rgba(99,102,241,0.25);
+      flex: 0 0 auto;
+    }
+    .brand-mark svg { width: 22px; height: 22px; }
+    .hero {
+      padding: 2.75rem 0 1.25rem;
+    }
+    .hero-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+    }
+    .hero-img {
+      width: 100%;
+      height: 360px;
+      object-fit: cover;
+      display: block;
+    }
+    @media (min-width: 992px) {
+      .hero-img { height: 420px; }
+    }
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(11,18,32,0.15) 0%, rgba(11,18,32,0.88) 88%);
+    }
+    .hero-content {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 1.25rem 1.25rem 1.4rem;
+    }
+    .badge-soft {
+      background: rgba(99, 102, 241, 0.20);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #c7d2fe;
+    }
+    .controls-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 16px;
+    }
+    .form-control, .form-select {
+      background-color: rgba(255,255,255,0.06);
+      color: var(--bs-body-color);
+      border-color: rgba(255,255,255,0.14);
+    }
+    .form-control::placeholder { color: rgba(230,234,242,0.65); }
+    .form-control:focus, .form-select:focus {
+      background-color: rgba(255,255,255,0.08);
+      color: var(--bs-body-color);
+      border-color: rgba(34,211,238,0.55);
+      box-shadow: 0 0 0 .25rem rgba(34,211,238,0.18);
+    }
+    .form-select option {
+      background: #0b1220;
+      color: #e6eaf2;
+    }
+    .book-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+      height: 100%;
+    }
+    .book-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(34,211,238,0.35);
+      box-shadow: 0 14px 44px rgba(0,0,0,0.35);
+    }
+    .muted { color: rgba(230,234,242,0.75); }
+    .price {
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .divider {
+      height: 1px;
+      background: rgba(255,255,255,0.10);
+    }
+    footer {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      background: rgba(11, 18, 32, 0.55);
+      backdrop-filter: blur(10px);
+    }
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+      background-size: 200% 100%;
+      animation: shimmer 1.1s infinite;
+      border-radius: 12px;
+      min-height: 160px;
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .alert-custom {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: #fde68a;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #22d3ee);
+      border: 0;
+    }
+    .btn-primary:focus {
+      box-shadow: 0 0 0 .25rem rgba(99,102,241,0.22);
+    }
+    .small-note { font-size: .925rem; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M6 4.5h9a3 3 0 0 1 3 3V19a1 1 0 0 1-1.447.894L13 18.118a2 2 0 0 0-1.789 0l-3.553 1.776A1 1 0 0 1 6 19V4.5Z" stroke="white" stroke-width="1.6" opacity="0.95"/>
+            <path d="M9 8h6" stroke="white" stroke-width="1.6" stroke-linecap="round" opacity="0.95"/>
+            <path d="M9 11h6" stroke="white" stroke-width="1.6" stroke-linecap="round" opacity="0.85"/>
+          </svg>
+        </span>
+        <span class="fw-semibold">Online Bookstore</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent" aria-controls="navContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navContent">
+        <div class="ms-auto d-flex align-items-lg-center gap-2 py-3 py-lg-0">
+          <span class="badge badge-soft rounded-pill px-3 py-2">Discover your next read</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container">
+      <div class="hero-card position-relative">
+        <img class="hero-img" src="/static/images/generated.png" alt="AI-generated hero banner image for the bookstore" />
+        <div class="hero-overlay" aria-hidden="true"></div>
+        <div class="hero-content">
+          <div class="row g-3 align-items-end">
+            <div class="col-12 col-lg-8">
+              <h1 class="display-6 fw-semibold mb-2">Browse books. Search fast. Filter by genre.</h1>
+              <p class="muted mb-0 small-note">A modern catalogue powered by your API endpoints: <span class="text-white-50">/api/books</span> and <span class="text-white-50">/api/genres</span>.</p>
+            </div>
+            <div class="col-12 col-lg-4 text-lg-end">
+              <a class="btn btn-primary px-4" href="#catalogue">Explore Catalogue</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="pb-5" id="catalogue">
+    <div class="container">
+      <div class="controls-card p-3 p-md-4 mb-4">
+        <div class="row g-3 align-items-end">
+          <div class="col-12 col-lg-6">
+            <label for="searchInput" class="form-label mb-1">Search</label>
+            <input id="searchInput" type="search" class="form-control" placeholder="Search by title, author, or keyword…" autocomplete="off" />
+          </div>
+          <div class="col-12 col-lg-4">
+            <label for="genreSelect" class="form-label mb-1">Genre</label>
+            <select id="genreSelect" class="form-select">
+              <option value="">All genres</option>
+            </select>
+          </div>
+          <div class="col-12 col-lg-2 d-grid">
+            <button id="clearBtn" class="btn btn-outline-light">Clear</button>
+          </div>
+          <div class="col-12">
+            <div class="divider my-1"></div>
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2">
+              <div class="muted small-note" id="resultsMeta">Loading…</div>
+              <div class="text-white-50 small-note" id="statusText"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="errorBox" class="alert alert-custom d-none" role="alert"></div>
+
+      <div class="row g-3 g-md-4" id="booksGrid" aria-live="polite" aria-busy="true">
+        <div class="col-12 col-sm-6 col-lg-4"><div class="skeleton"></div></div>
+        <div class="col-12 col-sm-6 col-lg-4"><div class="skeleton"></div></div>
+        <div class="col-12 col-sm-6 col-lg-4"><div class="skeleton"></div></div>
+        <div class="col-12 col-sm-6 col-lg-4 d-none d-lg-block"><div class="skeleton"></div></div>
+        <div class="col-12 col-sm-6 col-lg-4 d-none d-lg-block"><div class="skeleton"></div></div>
+        <div class="col-12 col-sm-6 col-lg-4 d-none d-lg-block"><div class="skeleton"></div></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="py-4">
+    <div class="container">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+        <div class="text-white-50 small-note">
+          &copy; <span id="year"></span> Online Bookstore. All rights reserved.
+        </div>
+        <div class="text-white-50 small-note">
+          Built with Bootstrap 5.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script>
+    (function () {
+      const booksGrid = document.getElementById('booksGrid');
+      const searchInput = document.getElementById('searchInput');
+      const genreSelect = document.getElementById('genreSelect');
+      const clearBtn = document.getElementById('clearBtn');
+      const errorBox = document.getElementById('errorBox');
+      const resultsMeta = document.getElementById('resultsMeta');
+      const statusText = document.getElementById('statusText');
+      const yearEl = document.getElementById('year');
+
+      yearEl.textContent = new Date().getFullYear();
+
+      let lastRequestId = 0;
+      let debounceTimer = null;
+
+      function setBusy(isBusy) {
+        booksGrid.setAttribute('aria-busy', isBusy ? 'true' : 'false');
+      }
+
+      function showError(message) {
+        if (!message) {
+          errorBox.classList.add('d-none');
+          errorBox.textContent = '';
+          return;
+        }
+        errorBox.textContent = message;
+        errorBox.classList.remove('d-none');
+      }
+
+      function formatPrice(price) {
+        if (price == null) return '';
+        if (typeof price === 'number') return price.toFixed(2);
+        const n = Number(price);
+        if (!Number.isNaN(n)) return n.toFixed(2);
+        return String(price);
+      }
+
+      function escapeHtml(s) {
+        return String(s ?? '')
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;');
+      }
+
+      function renderBooks(books, meta) {
+        const count = Array.isArray(books) ? books.length : 0;
+
+        resultsMeta.textContent = meta ?? (count === 1 ? '1 book' : `${count} books`);
+        statusText.textContent = '';
+
+        if (!Array.isArray(books) || books.length === 0) {
+          booksGrid.innerHTML = `
+            <div class="col-12">
+              <div class="p-4 controls-card">
+                <h2 class="h5 mb-2">No books found</h2>
+                <p class="muted mb-0">Try a different search term or genre.</p>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        booksGrid.innerHTML = books.map(b => {
+          const title = escapeHtml(b.title ?? 'Untitled');
+          const author = escapeHtml(b.author ?? 'Unknown author');
+          const genre = escapeHtml(b.genre ?? 'Uncategorized');
+          const price = formatPrice(b.price);
+          const priceText = price ? `$${escapeHtml(price)}` : '—';
+
+          return `
+            <div class="col-12 col-sm-6 col-lg-4">
+              <div class="card book-card">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div class="min-w-0">
+                      <h3 class="h5 card-title mb-1 text-truncate" title="${title}">${title}</h3>
+                      <div class="muted mb-2">by <span class="text-white">${author}</span></div>
+                    </div>
+                    <div class="price text-nowrap">${priceText}</div>
+                  </div>
+                  <div class="mt-3 d-flex flex-wrap gap-2">
+                    <span class="badge rounded-pill text-bg-dark border border-light border-opacity-10">${genre}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function normalizeGenres(data) {
+        if (!data) return [];
+        if (Array.isArray(data)) {
+          return data.map(g => (typeof g === 'string' ? g : (g?.name ?? g?.genre ?? g?.title ?? ''))).filter(Boolean);
+        }
+        if (Array.isArray(data.genres)) {
+          return data.genres.map(g => (typeof g === 'string' ? g : (g?.name ?? g?.genre ?? g?.title ?? ''))).filter(Boolean);
+        }
+        return [];
+      }
+
+      function normalizeBooks(data) {
+        if (!data) return [];
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data.books)) return data.books;
+        if (Array.isArray(data.items)) return data.items;
+        if (Array.isArray(data.results)) return data.results;
+        return [];
+      }
+
+      async function fetchGenres() {
+        try {
+          const res = await fetch('/api/genres', { headers: { 'Accept': 'application/json' } });
+          if (!res.ok) throw new Error(`Failed to load genres (HTTP ${res.status})`);
+          const data = await res.json();
+          const genres = normalizeGenres(data);
+
+          const existing = new Set(Array.from(genreSelect.options).map(o => o.value));
+          genres.forEach(g => {
+            if (existing.has(g)) return;
+            const opt = document.createElement('option');
+            opt.value = g;
+            opt.textContent = g;
+            genreSelect.appendChild(opt);
+          });
+        } catch (e) {
+          // Non-fatal; keep dropdown usable.
+          statusText.textContent = 'Genres unavailable.';
+        }
+      }
+
+      function buildBooksUrl() {
+        const url = new URL('/api/books', window.location.origin);
+        const search = searchInput.value.trim();
+        const genre = genreSelect.value.trim();
+
+        if (search) url.searchParams.set('search', search);
+        if (genre) url.searchParams.set('genre', genre);
+
+        return url.toString();
+      }
+
+      async function fetchBooks() {
+        const requestId = ++lastRequestId;
+        setBusy(true);
+        showError('');
+
+        const url = buildBooksUrl();
+        statusText.textContent = 'Loading…';
+
+        try {
+          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+          if (!res.ok) throw new Error(`Failed to load books (HTTP ${res.status})`);
+          const data = await res.json();
+
+          if (requestId !== lastRequestId) return; // ignore stale responses
+
+          const books = normalizeBooks(data);
+          const search = searchInput.value.trim();
+          const genre = genreSelect.value.trim();
+
+          const parts = [];
+          parts.push(books.length === 1 ? '1 book' : `${books.length} books`);
+          if (search) parts.push(`matching “${search}”`);
+          if (genre) parts.push(`in ${genre}`);
+
+          renderBooks(books, parts.join(' '));
+        } catch (e) {
+          if (requestId !== lastRequestId) return;
+          renderBooks([], '0 books');
+          showError(e?.message || 'Something went wrong while loading books.');
+          statusText.textContent = '';
+        } finally {
+          if (requestId === lastRequestId) setBusy(false);
+        }
+      }
+
+      function scheduleFetch() {
+        window.clearTimeout(debounceTimer);
+        debounceTimer = window.setTimeout(fetchBooks, 220);
+      }
+
+      searchInput.addEventListener('input', scheduleFetch);
+      genreSelect.addEventListener('change', fetchBooks);
+
+      clearBtn.addEventListener('click', function () {
+        searchInput.value = '';
+        genreSelect.value = '';
+        fetchBooks();
+        searchInput.focus();
+      });
+
+      // Initial load
+      (async function init() {
+        await fetchGenres();
+        await fetchBooks();
+      })();
+    })();
+  </script>
+</body>
+</html>

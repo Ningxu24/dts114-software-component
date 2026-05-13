@@ -1,0 +1,49 @@
+@startuml
+title Online Bookstore - Browse and Purchase Book
+
+actor User
+participant Browser
+participant FlaskAPI
+database DataStore
+
+== Load Homepage ==
+User -> Browser: Open bookstore URL
+Browser -> FlaskAPI: GET /
+FlaskAPI -> DataStore: Query featured books/categories
+DataStore --> FlaskAPI: Featured books/categories
+FlaskAPI --> Browser: 200 OK (homepage HTML/JSON)
+Browser --> User: Render homepage
+
+== Search Books ==
+User -> Browser: Enter search query + submit
+Browser -> FlaskAPI: GET /search?q=...
+FlaskAPI -> DataStore: Search books (title/author/ISBN)
+DataStore --> FlaskAPI: Search results
+FlaskAPI --> Browser: 200 OK (results)
+Browser --> User: Render results list
+
+== View Book Detail ==
+User -> Browser: Click a book
+Browser -> FlaskAPI: GET /books/{bookId}
+FlaskAPI -> DataStore: Fetch book details + availability
+DataStore --> FlaskAPI: Book details
+FlaskAPI --> Browser: 200 OK (book detail)
+Browser --> User: Render book detail page
+
+== Add to Cart ==
+User -> Browser: Add to cart (qty)
+Browser -> FlaskAPI: POST /cart/items (bookId, qty)
+FlaskAPI -> DataStore: Validate stock & price; upsert cart item
+DataStore --> FlaskAPI: Cart updated
+FlaskAPI --> Browser: 200 OK (cart summary)
+Browser --> User: Show cart updated
+
+== Checkout ==
+User -> Browser: Proceed to checkout
+Browser -> FlaskAPI: POST /checkout (shipping, payment token)
+FlaskAPI -> DataStore: Create order; reserve/decrement inventory
+DataStore --> FlaskAPI: Order created (orderId, totals)
+FlaskAPI --> Browser: 200 OK (order confirmation)
+Browser --> User: Display confirmation (orderId)
+
+@enduml
