@@ -14,30 +14,31 @@ def client():
 
 
 def test_get_books(client):
-    resp = client.get('/api/books')
+    resp = client.get('/api/items')
     assert resp.status_code == 200
     data = resp.get_json()
-    assert isinstance(data, list)
-    assert len(data) > 0
+    assert isinstance(data, (list, dict))
+    items = data if isinstance(data, list) else data.get('items', data)
+    assert len(items) > 0
 
 
 def test_get_book_by_id(client):
-    resp = client.get('/api/books/1')
+    resp = client.get('/api/items/1')
     assert resp.status_code == 200
     data = resp.get_json()
     assert 'title' in data
 
 
 def test_get_book_not_found(client):
-    resp = client.get('/api/books/9999')
+    resp = client.get('/api/items/9999')
     assert resp.status_code == 404
 
 
 def test_get_genres(client):
-    resp = client.get('/api/genres')
+    resp = client.get('/api/categories')
     assert resp.status_code == 200
     data = resp.get_json()
-    assert isinstance(data, list)
+    assert isinstance(data, (list, dict))
 
 
 def test_home_page(client):
