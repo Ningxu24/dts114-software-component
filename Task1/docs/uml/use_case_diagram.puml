@@ -1,52 +1,70 @@
 @startuml
 actor Customer
-actor "Store Manager" as StoreManager
 actor Developer
+actor Librarian
 
-rectangle "Online Bookstore" {
-  usecase "Browse catalogue" as BrowseCatalogue
-  usecase "Paginate results" as PaginateResults
-  usecase "Sort catalogue" as SortCatalogue
-
+rectangle "Book Catalogue REST Platform" {
   usecase "Search books" as SearchBooks
-  usecase "Filter books" as FilterBooks
-
+  usecase "Filter results" as FilterResults
+  usecase "Sort results" as SortResults
+  usecase "Paginate results" as PaginateResults
   usecase "View book details" as ViewBookDetails
-  usecase "View availability status" as ViewAvailabilityStatus
 
-  usecase "Manage catalogue data" as ManageCatalogueData
-  usecase "Validate catalogue entries" as ValidateCatalogueEntries
-  usecase "Record audit trail" as RecordAuditTrail
+  usecase "Query books API" as QueryBooksApi
+  usecase "Validate request" as ValidateRequest
+  usecase "Return error schema" as ReturnErrorSchema
 
-  usecase "Use book API" as UseBookApi
   usecase "Authenticate API key" as AuthenticateApiKey
   usecase "Enforce rate limits" as EnforceRateLimits
-  usecase "Paginate API results" as PaginateApiResults
-  usecase "Sort API results" as SortApiResults
-  usecase "Search API books" as SearchApiBooks
-  usecase "Filter API books" as FilterApiBooks
+  usecase "Return retry guidance" as ReturnRetryGuidance
+
+  usecase "Manage books" as ManageBooks
+  usecase "Manage authors" as ManageAuthors
+  usecase "Manage genres" as ManageGenres
+  usecase "Check duplicates" as CheckDuplicates
+  usecase "Validate data" as ValidateData
+  usecase "Record audit log" as RecordAuditLog
+  usecase "Deactivate record" as DeactivateRecord
 }
 
-Customer -- BrowseCatalogue
 Customer -- SearchBooks
 Customer -- ViewBookDetails
 
-BrowseCatalogue ..> PaginateResults : <<include>>
-BrowseCatalogue ..> SortCatalogue : <<include>>
+Developer -- QueryBooksApi
+Developer -- AuthenticateApiKey
 
-SearchBooks ..> FilterBooks : <<extend>>
+Librarian -- ManageBooks
+Librarian -- ManageAuthors
+Librarian -- ManageGenres
 
-ViewBookDetails ..> ViewAvailabilityStatus : <<include>>
+SearchBooks ..> FilterResults : <<include>>
+SearchBooks ..> SortResults : <<include>>
+SearchBooks ..> PaginateResults : <<include>>
+SearchBooks ..> ViewBookDetails : <<extend>>
 
-StoreManager -- ManageCatalogueData
-ManageCatalogueData ..> ValidateCatalogueEntries : <<include>>
-ManageCatalogueData ..> RecordAuditTrail : <<include>>
+QueryBooksApi ..> FilterResults : <<include>>
+QueryBooksApi ..> SortResults : <<include>>
+QueryBooksApi ..> PaginateResults : <<include>>
+QueryBooksApi ..> ValidateRequest : <<include>>
+ValidateRequest ..> ReturnErrorSchema : <<extend>>
 
-Developer -- UseBookApi
-UseBookApi ..> AuthenticateApiKey : <<include>>
-UseBookApi ..> EnforceRateLimits : <<include>>
-UseBookApi ..> PaginateApiResults : <<include>>
-UseBookApi ..> SortApiResults : <<include>>
-UseBookApi ..> SearchApiBooks : <<extend>>
-UseBookApi ..> FilterApiBooks : <<extend>>
+QueryBooksApi ..> AuthenticateApiKey : <<include>>
+AuthenticateApiKey ..> EnforceRateLimits : <<include>>
+EnforceRateLimits ..> ReturnRetryGuidance : <<extend>>
+
+ManageBooks ..> ValidateData : <<include>>
+ManageAuthors ..> ValidateData : <<include>>
+ManageGenres ..> ValidateData : <<include>>
+
+ManageBooks ..> CheckDuplicates : <<include>>
+ManageAuthors ..> CheckDuplicates : <<include>>
+ManageGenres ..> CheckDuplicates : <<include>>
+
+ManageBooks ..> RecordAuditLog : <<include>>
+ManageAuthors ..> RecordAuditLog : <<include>>
+ManageGenres ..> RecordAuditLog : <<include>>
+
+ManageBooks ..> DeactivateRecord : <<extend>>
+ManageAuthors ..> DeactivateRecord : <<extend>>
+ManageGenres ..> DeactivateRecord : <<extend>>
 @enduml

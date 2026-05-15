@@ -1,204 +1,292 @@
-from flask import Flask, jsonify, request, abort, render_template
+from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
-from typing import Any, Dict, List, Optional
-
+from datetime import datetime, timezone
+import threading
+import time
+import secrets
 
 app = Flask(__name__, template_folder="templates")
 CORS(app)
 
-# In-memory data store
-books: List[Dict[str, Any]] = [
+# -----------------------------
+# In-memory datastore
+# -----------------------------
+_DATA_LOCK = threading.Lock()
+_ITEMS = [
     {
         "id": 1,
-        "title": "The Night Circus",
-        "author": "Erin Morgenstern",
-        "genre": "Fantasy",
-        "price": 14.99,
-        "description": "A mysterious traveling circus appears without warning, opening only at night. Two young illusionists are bound to a magical competition with unknowable stakes.",
-        "cover_url": "https://example.com/covers/the-night-circus.jpg",
+        "title": "The Pragmatic Programmer",
+        "genre": "Software Engineering",
+        "price": 42.00,
+        "description": "Classic guide to pragmatic thinking, craftsmanship, and maintainable software development.",
     },
     {
         "id": 2,
-        "title": "Sapiens: A Brief History of Humankind",
-        "author": "Yuval Noah Harari",
-        "genre": "Nonfiction",
-        "price": 18.50,
-        "description": "An accessible, sweeping history of Homo sapiens—how biology and history defined us, and how we can define the future.",
-        "cover_url": "https://example.com/covers/sapiens.jpg",
+        "title": "Clean Code",
+        "genre": "Software Engineering",
+        "price": 39.50,
+        "description": "Principles and practices for writing readable, robust, and maintainable codebases.",
     },
     {
         "id": 3,
-        "title": "The Martian",
-        "author": "Andy Weir",
+        "title": "Dune",
         "genre": "Science Fiction",
-        "price": 12.99,
-        "description": "An astronaut is stranded on Mars and must use ingenuity, science, and sheer stubbornness to survive until rescue is possible.",
-        "cover_url": "https://example.com/covers/the-martian.jpg",
+        "price": 14.99,
+        "description": "Epic science fiction saga of politics, ecology, and destiny on the desert planet Arrakis.",
     },
     {
         "id": 4,
-        "title": "Where the Crawdads Sing",
-        "author": "Delia Owens",
-        "genre": "Mystery",
-        "price": 16.25,
-        "description": "In the marshes of North Carolina, a young woman grows up in isolation, becoming entangled in a small-town mystery and an unexpected love story.",
-        "cover_url": "https://example.com/covers/where-the-crawdads-sing.jpg",
+        "title": "The Name of the Wind",
+        "genre": "Fantasy",
+        "price": 12.99,
+        "description": "A gifted musician and magician recounts his life story, legend, and the cost of fame.",
     },
     {
         "id": 5,
-        "title": "Atomic Habits",
-        "author": "James Clear",
-        "genre": "Self-Help",
-        "price": 17.00,
-        "description": "A practical framework for building good habits, breaking bad ones, and making tiny changes that lead to remarkable results.",
-        "cover_url": "https://example.com/covers/atomic-habits.jpg",
+        "title": "Sapiens: A Brief History of Humankind",
+        "genre": "History",
+        "price": 18.00,
+        "description": "A sweeping narrative of human evolution, culture, and the forces that shaped modern society.",
     },
     {
         "id": 6,
-        "title": "Pride and Prejudice",
-        "author": "Jane Austen",
-        "genre": "Classic",
-        "price": 9.99,
-        "description": "A witty, enduring romance exploring class, family, and first impressions through Elizabeth Bennet and Mr. Darcy.",
-        "cover_url": "https://example.com/covers/pride-and-prejudice.jpg",
+        "title": "Atomic Habits",
+        "genre": "Self-Help",
+        "price": 16.00,
+        "description": "A practical framework for building good habits, breaking bad ones, and mastering tiny behaviors.",
     },
 ]
 
+_NEXT_ID = max(i["id"] for i in _ITEMS) + 1
 
-def _next_id() -> int:
-    if not books:
-        return 1
-    return max(b["id"] for b in books) + 1
-
-
-def _get_book_or_404(book_id: int) -> Dict[str, Any]:
-    for b in books:
-        if b.get("id") == book_id:
-            return b
-    abort(404, description="Book not found")
+# -----------------------------
+# Minimal security controls
+# (Optional API key enforcement via env/config could be added; kept simple for scope)
+# -----------------------------
+_RATE_LIMIT_LOCK = threading.Lock()
+_RATE_BUCKETS = {}  # key: ip -> {"window_start": epoch_seconds, "count": int}
+RATE_LIMIT_PER_MINUTE = 120
 
 
-def _as_non_empty_str(value: Any, field: str) -> str:
-    if value is None:
-        abort(400, description=f"Missing required field: {field}")
-    if not isinstance(value, str):
-        abort(400, description=f"Field '{field}' must be a string")
-    v = value.strip()
-    if not v:
-        abort(400, description=f"Field '{field}' cannot be empty")
-    return v
+def _now_utc_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
-def _as_price(value: Any) -> float:
-    if value is None:
-        abort(400, description="Missing required field: price")
-    try:
-        p = float(value)
-    except (TypeError, ValueError):
-        abort(400, description="Field 'price' must be a number")
-    if p < 0:
-        abort(400, description="Field 'price' must be >= 0")
-    return round(p, 2)
+def _error(message, status_code=400, **extra):
+    payload = {
+        "error": {
+            "message": message,
+            "status": status_code,
+        }
+    }
+    if extra:
+        payload["error"].update(extra)
+    response = jsonify(payload)
+    response.status_code = status_code
+    return response
 
 
-def _validate_cover_url(value: Any) -> str:
-    url = _as_non_empty_str(value, "cover_url")
-    if not (url.startswith("http://") or url.startswith("https://")):
-        abort(400, description="Field 'cover_url' must start with http:// or https://")
-    return url
+def _normalize(s: str) -> str:
+    return (s or "").strip().lower()
 
 
+def _rate_limit():
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr) or "unknown"
+    ip = ip.split(",")[0].strip()
+    now = int(time.time())
+    window = now // 60  # 60s windows
+    with _RATE_LIMIT_LOCK:
+        entry = _RATE_BUCKETS.get(ip)
+        if not entry or entry["window"] != window:
+            _RATE_BUCKETS[ip] = {"window": window, "count": 1}
+            return None
+        entry["count"] += 1
+        if entry["count"] > RATE_LIMIT_PER_MINUTE:
+            return _error(
+                "Rate limit exceeded",
+                status_code=429,
+                limit=RATE_LIMIT_PER_MINUTE,
+                window_seconds=60,
+            )
+    return None
+
+
+@app.before_request
+def _before_request():
+    # Basic, lightweight rate limiting for API routes
+    if request.path.startswith("/api/"):
+        rl = _rate_limit()
+        if rl is not None:
+            return rl
+    return None
+
+
+# -----------------------------
+# Web route
+# -----------------------------
 @app.get("/")
 def index():
     return render_template("index.html")
 
 
-@app.get("/api/books")
-def list_books():
-    genre = request.args.get("genre", type=str)
-    search = request.args.get("search", type=str)
+# -----------------------------
+# API routes (versionless per requirement)
+# -----------------------------
+@app.get("/api/items")
+def list_items():
+    category = request.args.get("category", default=None, type=str)
+    search = request.args.get("search", default=None, type=str)
 
-    results = books
+    category_n = _normalize(category) if category else None
+    search_n = _normalize(search) if search else None
 
-    if genre:
-        g = genre.strip().lower()
-        results = [b for b in results if str(b.get("genre", "")).strip().lower() == g]
+    with _DATA_LOCK:
+        results = list(_ITEMS)
 
-    if search:
-        s = search.strip().lower()
-        if s:
-            results = [
-                b
-                for b in results
-                if s in str(b.get("title", "")).lower()
-                or s in str(b.get("author", "")).lower()
-                or s in str(b.get("description", "")).lower()
-            ]
+    if category_n:
+        results = [i for i in results if _normalize(i.get("genre")) == category_n]
 
-    return jsonify(results), 200
+    if search_n:
+        results = [
+            i
+            for i in results
+            if search_n in _normalize(i.get("title")) or search_n in _normalize(i.get("description"))
+        ]
 
-
-@app.get("/api/books/<int:book_id>")
-def get_book(book_id: int):
-    book = _get_book_or_404(book_id)
-    return jsonify(book), 200
+    return jsonify(
+        {
+            "items": results,
+            "count": len(results),
+            "timestamp": _now_utc_iso(),
+        }
+    )
 
 
-@app.post("/api/books")
-def add_book():
+@app.get("/api/items/<int:item_id>")
+def get_item(item_id: int):
+    with _DATA_LOCK:
+        item = next((i for i in _ITEMS if i["id"] == item_id), None)
+    if not item:
+        return _error("Item not found", status_code=404, id=item_id)
+    return jsonify(item)
+
+
+def _validate_item_payload(payload, require_all_fields: bool = True):
+    if not isinstance(payload, dict):
+        return "Invalid JSON body; expected an object"
+
+    missing = []
+    for field in ("title", "genre", "price", "description"):
+        if field not in payload:
+            missing.append(field)
+
+    if require_all_fields and missing:
+        return f"Missing required field(s): {', '.join(missing)}"
+
+    if "title" in payload:
+        if not isinstance(payload["title"], str) or not payload["title"].strip():
+            return "Field 'title' must be a non-empty string"
+    if "genre" in payload:
+        if not isinstance(payload["genre"], str) or not payload["genre"].strip():
+            return "Field 'genre' must be a non-empty string"
+    if "description" in payload:
+        if not isinstance(payload["description"], str) or not payload["description"].strip():
+            return "Field 'description' must be a non-empty string"
+    if "price" in payload:
+        if not isinstance(payload["price"], (int, float)) or payload["price"] < 0:
+            return "Field 'price' must be a non-negative number"
+
+    return None
+
+
+def _is_duplicate(title: str, genre: str):
+    t = _normalize(title)
+    g = _normalize(genre)
+    with _DATA_LOCK:
+        for it in _ITEMS:
+            if _normalize(it.get("title")) == t and _normalize(it.get("genre")) == g:
+                return it
+    return None
+
+
+@app.post("/api/items")
+def add_item():
     if not request.is_json:
-        abort(400, description="Request body must be JSON")
+        return _error("Content-Type must be application/json", status_code=400)
 
-    data = request.get_json(silent=True)
-    if data is None or not isinstance(data, dict):
-        abort(400, description="Invalid JSON body")
+    payload = request.get_json(silent=True)
+    err = _validate_item_payload(payload, require_all_fields=True)
+    if err:
+        return _error(err, status_code=400)
 
-    title = _as_non_empty_str(data.get("title"), "title")
-    author = _as_non_empty_str(data.get("author"), "author")
-    genre = _as_non_empty_str(data.get("genre"), "genre")
-    price = _as_price(data.get("price"))
-    description = _as_non_empty_str(data.get("description"), "description")
-    cover_url = _validate_cover_url(data.get("cover_url"))
+    title = payload["title"].strip()
+    genre = payload["genre"].strip()
+    description = payload["description"].strip()
+    price = float(payload["price"])
 
-    new_book = {
-        "id": _next_id(),
-        "title": title,
-        "author": author,
-        "genre": genre,
-        "price": price,
-        "description": description,
-        "cover_url": cover_url,
-    }
-    books.append(new_book)
-    return jsonify(new_book), 201
+    dup = _is_duplicate(title, genre)
+    if dup:
+        return _error(
+            "Duplicate item detected (same title and category)",
+            status_code=400,
+            duplicate_id=dup["id"],
+        )
+
+    global _NEXT_ID
+    with _DATA_LOCK:
+        item_id = _NEXT_ID
+        _NEXT_ID += 1
+        item = {
+            "id": item_id,
+            "title": title,
+            "genre": genre,
+            "price": round(price, 2),
+            "description": description,
+        }
+        _ITEMS.append(item)
+
+    resp = jsonify(item)
+    resp.status_code = 201
+    resp.headers["Location"] = f"/api/items/{item_id}"
+    return resp
 
 
-@app.get("/api/genres")
-def list_genres():
-    unique = sorted({str(b.get("genre", "")).strip() for b in books if str(b.get("genre", "")).strip()})
-    return jsonify(unique), 200
+@app.get("/api/categories")
+def list_categories():
+    with _DATA_LOCK:
+        genres = sorted({i.get("genre", "").strip() for i in _ITEMS if i.get("genre")})
+    return jsonify({"categories": genres, "count": len(genres), "timestamp": _now_utc_iso()})
 
 
-@app.errorhandler(HTTPException)
-def handle_http_exception(e: HTTPException):
-    response = {
-        "error": e.name,
-        "message": e.description if isinstance(e.description, str) else "Request failed",
-        "status": e.code,
-    }
-    return jsonify(response), e.code
+# -----------------------------
+# Error handling
+# -----------------------------
+@app.errorhandler(404)
+def handle_404(_e):
+    return _error("Not found", status_code=404, path=request.path)
+
+
+@app.errorhandler(400)
+def handle_400(e):
+    if isinstance(e, HTTPException) and e.description:
+        return _error(e.description, status_code=400)
+    return _error("Bad request", status_code=400)
+
+
+@app.errorhandler(405)
+def handle_405(_e):
+    return _error("Method not allowed", status_code=405, path=request.path, method=request.method)
 
 
 @app.errorhandler(Exception)
-def handle_unexpected_exception(e: Exception):
-    response = {
-        "error": "Internal Server Error",
-        "message": "An unexpected error occurred",
-        "status": 500,
-    }
-    return jsonify(response), 500
+def handle_exception(e):
+    if isinstance(e, HTTPException):
+        return _error(e.description or "HTTP error", status_code=e.code or 500)
+    request_id = secrets.token_hex(8)
+    return _error("Internal server error", status_code=500, request_id=request_id)
 
 
 if __name__ == "__main__":
+    # Production: run behind a WSGI server (gunicorn/uwsgi). This is for local/dev.
     app.run(host="0.0.0.0", port=5000, debug=False)

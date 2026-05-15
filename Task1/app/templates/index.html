@@ -3,464 +3,678 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Leaf & Byte Books</title>
-  <meta name="description" content="Online Bookstore - browse, search, and filter books." />
+  <title>Book Catalogue & API</title>
+  <meta name="description" content="Public web catalogue + REST API for browsing and querying books." />
+
+  <!-- Bootstrap 5 CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
   <style>
-    :root{
-      --bs-body-bg: #0b1220;
-      --card-bg: rgba(255,255,255,.06);
-      --card-border: rgba(255,255,255,.10);
+    :root { --app-accent: #4f46e5; }
+    body { background: #0b1220; color: #e5e7eb; }
+    .navbar { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); }
+    .navbar-brand { letter-spacing: 0.3px; }
+    .hero {
+      background: radial-gradient(1200px 400px at 10% 0%, rgba(79,70,229,0.35), transparent 55%),
+                  radial-gradient(900px 350px at 95% 10%, rgba(14,165,233,0.20), transparent 55%),
+                  linear-gradient(180deg, rgba(2,6,23,0.0), rgba(2,6,23,0.55));
     }
-    body{
-      background:
-        radial-gradient(1200px 600px at 20% 10%, rgba(13,110,253,.25), transparent 55%),
-        radial-gradient(900px 500px at 80% 20%, rgba(32,201,151,.18), transparent 60%),
-        radial-gradient(1000px 600px at 50% 90%, rgba(255,193,7,.12), transparent 55%),
-        var(--bs-body-bg);
-      color: rgba(255,255,255,.92);
+    .hero-card {
+      background: rgba(2, 6, 23, 0.55);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      box-shadow: 0 10px 40px rgba(0,0,0,.35);
     }
-    .navbar{
-      background: rgba(11,18,32,.65) !important;
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-    .brand-mark{
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, rgba(13,110,253,.95), rgba(32,201,151,.90));
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 800;
-      letter-spacing: -.5px;
-      box-shadow: 0 12px 30px rgba(13,110,253,.25);
-      user-select: none;
-    }
-    .hero{
-      padding-top: 4.5rem;
-      padding-bottom: 2.5rem;
-    }
-    .hero-card{
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
-      box-shadow: 0 18px 60px rgba(0,0,0,.35);
+    .hero-img {
       border-radius: 18px;
-      overflow: hidden;
-    }
-    .hero-image{
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      box-shadow: 0 16px 50px rgba(0,0,0,.45);
       width: 100%;
-      height: 320px;
+      height: 360px;
       object-fit: cover;
-      display: block;
-      filter: saturate(1.05) contrast(1.02);
+      background: rgba(255,255,255,0.04);
     }
-    .soft-muted{ color: rgba(255,255,255,.70); }
-    .badge-soft{
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.10);
-      color: rgba(255,255,255,.85);
-    }
-    .controls{
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      padding: 1rem;
-    }
-    .form-control, .form-select{
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.12);
-      color: rgba(255,255,255,.92);
-    }
-    .form-control::placeholder{ color: rgba(255,255,255,.55); }
-    .form-control:focus, .form-select:focus{
-      background: rgba(255,255,255,.08);
-      border-color: rgba(13,110,253,.55);
-      box-shadow: 0 0 0 .25rem rgba(13,110,253,.15);
-      color: rgba(255,255,255,.95);
-    }
-    .form-select option{
-      color: #0b1220;
-    }
-    .book-card{
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      overflow: hidden;
+    @media (min-width: 992px) { .hero-img { height: 430px; } }
+
+    .section-title small { color: rgba(203, 213, 225, 0.75); }
+    .card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      color: #e5e7eb;
       height: 100%;
-      box-shadow: 0 12px 38px rgba(0,0,0,.22);
     }
-    .book-card .card-title{
-      color: rgba(255,255,255,.95);
-      letter-spacing: -.2px;
+    .card .text-muted { color: rgba(203, 213, 225, 0.70) !important; }
+    .badge-soft {
+      background: rgba(79,70,229,0.18);
+      border: 1px solid rgba(79,70,229,0.35);
+      color: #c7d2fe;
     }
-    .book-meta{ color: rgba(255,255,255,.75); }
-    .divider{
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
+    .badge-soft-2 {
+      background: rgba(14,165,233,0.14);
+      border: 1px solid rgba(14,165,233,0.30);
+      color: #bae6fd;
     }
-    .skeleton{
-      background: linear-gradient(90deg, rgba(255,255,255,.05), rgba(255,255,255,.10), rgba(255,255,255,.05));
+    .form-control, .form-select {
+      background: rgba(2,6,23,0.55);
+      border: 1px solid rgba(148,163,184,0.22);
+      color: #e5e7eb;
+    }
+    .form-control::placeholder { color: rgba(203,213,225,0.55); }
+    .form-control:focus, .form-select:focus {
+      border-color: rgba(99,102,241,0.65);
+      box-shadow: 0 0 0 .25rem rgba(99,102,241,0.18);
+      background: rgba(2,6,23,0.65);
+      color: #fff;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+      border: none;
+    }
+    .btn-outline-light {
+      border-color: rgba(226,232,240,0.35);
+      color: #e2e8f0;
+    }
+    .btn-outline-light:hover {
+      background: rgba(226,232,240,0.10);
+      border-color: rgba(226,232,240,0.50);
+      color: #fff;
+    }
+    .muted { color: rgba(203, 213, 225, 0.75); }
+    .divider {
+      height: 1px; background: linear-gradient(90deg, transparent, rgba(148,163,184,0.18), transparent);
+      margin: 26px 0;
+    }
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.10), rgba(255,255,255,0.05));
       background-size: 200% 100%;
-      animation: shimmer 1.2s infinite;
+      animation: shimmer 1.25s infinite;
       border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.08);
+      border: 1px solid rgba(148, 163, 184, 0.14);
     }
-    @keyframes shimmer{
-      0%{ background-position: 200% 0; }
-      100%{ background-position: -200% 0; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    footer {
+      border-top: 1px solid rgba(148, 163, 184, 0.16);
+      background: rgba(2, 6, 23, 0.45);
     }
-    footer{
-      border-top: 1px solid rgba(255,255,255,.08);
-      background: rgba(11,18,32,.65);
-      backdrop-filter: blur(10px);
+    a { color: #93c5fd; }
+    a:hover { color: #bfdbfe; }
+
+    .toast-container { z-index: 1080; }
+    .kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: .85rem;
+      padding: .1rem .4rem;
+      border-radius: .375rem;
+      border: 1px solid rgba(148,163,184,0.25);
+      background: rgba(2,6,23,0.65);
+      color: rgba(226,232,240,0.9);
     }
-    .link-muted{
-      color: rgba(255,255,255,.70);
-      text-decoration: none;
-    }
-    .link-muted:hover{ color: rgba(255,255,255,.90); text-decoration: underline; }
   </style>
 </head>
-
 <body>
+  <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
     <div class="container">
-      <a class="navbar-brand d-flex align-items-center gap-2" href="#">
-        <span class="brand-mark">LB</span>
-        <span class="fw-semibold">Leaf &amp; Byte Books</span>
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+      <a class="navbar-brand fw-semibold" href="#" id="appName">Book Catalogue & API</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent" aria-controls="navContent" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
-      <div class="collapse navbar-collapse" id="nav">
-        <ul class="navbar-nav ms-auto">
+
+      <div class="collapse navbar-collapse" id="navContent">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
           <li class="nav-item"><a class="nav-link" href="#catalogue">Catalogue</a></li>
-          <li class="nav-item"><a class="nav-link" href="#filters">Search &amp; Filter</a></li>
+          <li class="nav-item"><a class="nav-link" href="#how">API</a></li>
+          <li class="nav-item"><a class="nav-link" href="#footer">About</a></li>
+          <li class="nav-item ms-lg-2">
+            <button class="btn btn-sm btn-outline-light" id="refreshBtn" type="button">Refresh</button>
+          </li>
         </ul>
       </div>
     </div>
   </nav>
 
-  <header class="hero">
-    <div class="container">
-      <div class="row g-4 align-items-stretch">
-        <div class="col-12 col-lg-6">
-          <div class="hero-card h-100">
-            <img class="hero-image" src="/static/images/generated.png" alt="AI-generated bookstore banner image" />
+  <!-- Hero -->
+  <header class="hero py-5">
+    <div class="container py-3">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-6">
+          <div class="hero-card rounded-4 p-4 p-md-5">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="badge badge-soft rounded-pill">Browse</span>
+              <span class="badge badge-soft-2 rounded-pill">Search</span>
+              <span class="badge badge-soft rounded-pill">Filter</span>
+            </div>
+            <h1 class="display-6 fw-semibold mb-3">Discover books fast.</h1>
+            <p class="muted mb-4">
+              Explore the public catalogue, search across titles and authors, and filter by category.
+              Built to pair with a versioned REST API for stable integrations.
+            </p>
+
+            <div class="row g-2">
+              <div class="col-12 col-md-7">
+                <div class="input-group">
+                  <span class="input-group-text bg-transparent text-light border-secondary-subtle" style="border-color: rgba(148,163,184,0.22) !important;">Search</span>
+                  <input class="form-control" id="searchInput" placeholder="Title or author…" autocomplete="off" />
+                </div>
+                <div class="mt-2 muted small">
+                  Tip: press <span class="kbd">/</span> to focus, <span class="kbd">Enter</span> to search.
+                </div>
+              </div>
+              <div class="col-12 col-md-5">
+                <select class="form-select" id="categorySelect" aria-label="Category filter">
+                  <option value="">All categories</option>
+                </select>
+                <div class="mt-2 muted small">
+                  Category data from <code class="text-light">/api/categories</code>.
+                </div>
+              </div>
+              <div class="col-12 d-flex flex-wrap gap-2 mt-1">
+                <button class="btn btn-primary" id="searchBtn" type="button">Search</button>
+                <button class="btn btn-outline-light" id="clearBtn" type="button">Clear</button>
+                <a class="btn btn-outline-light" href="#catalogue">View catalogue</a>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="col-12 col-lg-6">
-          <div class="hero-card h-100 p-4 p-md-5 d-flex flex-column justify-content-center">
-            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-              <span class="badge rounded-pill badge-soft">Curated picks</span>
-              <span class="badge rounded-pill badge-soft">Fast search</span>
-              <span class="badge rounded-pill badge-soft">Genre filters</span>
-            </div>
-            <h1 class="display-6 fw-bold mb-3">Discover your next great read</h1>
-            <p class="lead soft-muted mb-4">
-              Browse the catalogue, search by title/author, and filter by genre—powered by simple, fast APIs.
-            </p>
-            <div class="d-flex flex-column flex-sm-row gap-2">
-              <a class="btn btn-primary btn-lg" href="#catalogue">Explore Catalogue</a>
-              <a class="btn btn-outline-light btn-lg" href="#filters">Search &amp; Filter</a>
-            </div>
-            <div class="mt-4 divider"></div>
-            <div class="mt-3 small soft-muted">
-              Banner image served from <code class="text-white-50">/static/images/generated.png</code>.
-            </div>
+
+        <div class="col-lg-6">
+          <img class="hero-img" src="/static/images/generated.png" alt="AI-generated hero banner" onerror="this.style.display='none'; document.getElementById('heroImageFallback').classList.remove('d-none');" />
+          <div id="heroImageFallback" class="d-none hero-card rounded-4 p-4">
+            <div class="fw-semibold mb-1">Hero image unavailable</div>
+            <div class="muted small">Expected at <code class="text-light">/static/images/generated.png</code>.</div>
           </div>
         </div>
       </div>
     </div>
   </header>
 
-  <main class="pb-5">
-    <section id="filters" class="py-4">
-      <div class="container">
-        <div class="controls">
-          <div class="row g-3 align-items-end">
-            <div class="col-12 col-md-7">
-              <label for="searchInput" class="form-label soft-muted mb-1">Search</label>
-              <div class="input-group">
-                <span class="input-group-text bg-transparent text-white-50 border border-white border-opacity-10">🔎</span>
-                <input id="searchInput" type="search" class="form-control" placeholder="Search by title, author, or keyword..." autocomplete="off" />
-                <button id="clearBtn" class="btn btn-outline-light" type="button">Clear</button>
+  <main class="py-5" id="catalogue">
+    <div class="container">
+      <div class="d-flex flex-wrap align-items-end justify-content-between gap-3">
+        <div>
+          <h2 class="h3 mb-1 section-title">Catalogue <small class="ms-1">browse & filter</small></h2>
+          <div class="muted">Results are fetched from <code class="text-light">/api/items</code> and rendered as cards.</div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <div class="muted small" id="statusText">Ready.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Controls -->
+      <div class="row g-2 align-items-end mb-3">
+        <div class="col-12 col-lg-6">
+          <label class="form-label muted mb-1" for="searchInput2">Search</label>
+          <input class="form-control" id="searchInput2" placeholder="Search by title or author…" autocomplete="off" />
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+          <label class="form-label muted mb-1" for="categorySelect2">Category</label>
+          <select class="form-select" id="categorySelect2">
+            <option value="">All categories</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3 d-grid d-md-flex gap-2 justify-content-md-end">
+          <button class="btn btn-primary" id="applyBtn" type="button">Apply</button>
+          <button class="btn btn-outline-light" id="resetBtn" type="button">Reset</button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="row g-3" id="itemsGrid" aria-live="polite" aria-busy="false"></div>
+
+      <!-- Empty state -->
+      <div class="text-center py-5 d-none" id="emptyState">
+        <div class="hero-card rounded-4 p-4 mx-auto" style="max-width: 720px;">
+          <div class="h5 mb-2">No items found</div>
+          <div class="muted mb-3">Try a different search term or change the category filter.</div>
+          <button class="btn btn-outline-light" id="emptyResetBtn" type="button">Clear filters</button>
+        </div>
+      </div>
+
+      <!-- API helper -->
+      <section class="mt-5" id="how">
+        <div class="hero-card rounded-4 p-4 p-md-5">
+          <div class="row g-4 align-items-center">
+            <div class="col-lg-7">
+              <h3 class="h4 mb-2">API-friendly by design</h3>
+              <p class="muted mb-3">
+                This UI uses the same REST endpoints partners would integrate with. Use the controls above to generate requests.
+              </p>
+              <div class="small muted mb-2">Last request</div>
+              <pre class="mb-0 p-3 rounded-3" style="background: rgba(2,6,23,0.65); border: 1px solid rgba(148,163,184,0.18); color: rgba(226,232,240,0.92); overflow:auto;"><code id="lastRequest">GET /api/items</code></pre>
+            </div>
+            <div class="col-lg-5">
+              <div class="small muted mb-2">Quick endpoints</div>
+              <ul class="list-group list-group-flush rounded-3 overflow-hidden" style="border: 1px solid rgba(148,163,184,0.18);">
+                <li class="list-group-item d-flex justify-content-between align-items-center" style="background: rgba(15,23,42,0.55); color: #e5e7eb; border-color: rgba(148,163,184,0.12);">
+                  <span><code class="text-light">/api/items</code></span><span class="badge badge-soft rounded-pill">items</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center" style="background: rgba(15,23,42,0.55); color: #e5e7eb; border-color: rgba(148,163,184,0.12);">
+                  <span><code class="text-light">/api/items?search=&lt;term&gt;</code></span><span class="badge badge-soft-2 rounded-pill">search</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center" style="background: rgba(15,23,42,0.55); color: #e5e7eb; border-color: rgba(148,163,184,0.12);">
+                  <span><code class="text-light">/api/categories</code></span><span class="badge badge-soft rounded-pill">categories</span>
+                </li>
+              </ul>
+              <div class="muted small mt-3">
+                Note: Item card fields rendered: <span class="text-light">name/title</span>, <span class="text-light">category</span>, <span class="text-light">price</span>, <span class="text-light">description</span>.
               </div>
-              <div class="form-text text-white-50">Uses <code class="text-white-50">/api/books?search=&lt;term&gt;</code></div>
-            </div>
-            <div class="col-12 col-md-3">
-              <label for="genreSelect" class="form-label soft-muted mb-1">Genre</label>
-              <select id="genreSelect" class="form-select">
-                <option value="">All genres</option>
-              </select>
-              <div class="form-text text-white-50">Populated from <code class="text-white-50">/api/genres</code></div>
-            </div>
-            <div class="col-12 col-md-2 d-grid">
-              <button id="refreshBtn" class="btn btn-outline-info" type="button">Refresh</button>
             </div>
           </div>
-
-          <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
-            <span id="statusPill" class="badge rounded-pill badge-soft">Ready</span>
-            <span class="small text-white-50">Showing <span id="count">0</span> books</span>
-          </div>
         </div>
-      </div>
-    </section>
-
-    <section id="catalogue" class="py-4">
-      <div class="container">
-        <div class="d-flex align-items-end justify-content-between gap-3 mb-3">
-          <div>
-            <h2 class="h3 fw-semibold mb-1">Book Catalogue</h2>
-            <div class="soft-muted">Rendered from <code class="text-white-50">/api/books</code> as Bootstrap cards.</div>
-          </div>
-        </div>
-
-        <div id="errorAlert" class="alert alert-danger d-none" role="alert"></div>
-
-        <div id="booksGrid" class="row g-3">
-          <!-- Skeletons while loading -->
-        </div>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
 
-  <footer class="py-4">
-    <div class="container d-flex flex-column flex-md-row gap-2 justify-content-between align-items-start align-items-md-center">
-      <div class="text-white-50">
-        © <span id="year"></span> Leaf &amp; Byte Books. All rights reserved.
+  <footer class="py-4" id="footer">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div class="muted small">
+        &copy; <span id="year"></span> Book Catalogue & API. All rights reserved.
       </div>
-      <div class="small">
-        <a class="link-muted" href="#filters">Search</a>
-        <span class="text-white-50 mx-2">•</span>
-        <a class="link-muted" href="#catalogue">Catalogue</a>
+      <div class="muted small">
+        Front end powered by Bootstrap 5 • Data via Flask REST API
       </div>
     </div>
   </footer>
+
+  <!-- Toasts -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="appToast" class="toast text-bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body" id="toastBody">Loaded.</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
   <script>
     (function () {
-      const booksGrid = document.getElementById('booksGrid');
-      const genreSelect = document.getElementById('genreSelect');
-      const searchInput = document.getElementById('searchInput');
-      const clearBtn = document.getElementById('clearBtn');
-      const refreshBtn = document.getElementById('refreshBtn');
-      const countEl = document.getElementById('count');
-      const statusPill = document.getElementById('statusPill');
-      const errorAlert = document.getElementById('errorAlert');
-      const yearEl = document.getElementById('year');
+      const state = {
+        search: "",
+        category: "",
+        categories: [],
+        items: [],
+        lastUrl: "/api/items",
+        loading: false,
+      };
 
-      yearEl.textContent = new Date().getFullYear();
+      const els = {
+        year: document.getElementById("year"),
+        statusText: document.getElementById("statusText"),
+        lastRequest: document.getElementById("lastRequest"),
+        grid: document.getElementById("itemsGrid"),
+        emptyState: document.getElementById("emptyState"),
 
-      let lastController = null;
-      let debounceTimer = null;
+        // hero controls
+        searchInput: document.getElementById("searchInput"),
+        categorySelect: document.getElementById("categorySelect"),
+        searchBtn: document.getElementById("searchBtn"),
+        clearBtn: document.getElementById("clearBtn"),
 
-      function setStatus(text, variant) {
-        statusPill.textContent = text;
-        statusPill.className = 'badge rounded-pill ' + (variant || 'badge-soft');
-        if (!variant) statusPill.classList.add('badge-soft');
+        // catalogue controls
+        searchInput2: document.getElementById("searchInput2"),
+        categorySelect2: document.getElementById("categorySelect2"),
+        applyBtn: document.getElementById("applyBtn"),
+        resetBtn: document.getElementById("resetBtn"),
+        emptyResetBtn: document.getElementById("emptyResetBtn"),
+
+        refreshBtn: document.getElementById("refreshBtn"),
+
+        toastEl: document.getElementById("appToast"),
+        toastBody: document.getElementById("toastBody"),
+      };
+
+      const toast = bootstrap.Toast.getOrCreateInstance(els.toastEl, { delay: 2600 });
+
+      function showToast(msg) {
+        els.toastBody.textContent = msg;
+        toast.show();
       }
 
-      function showError(message) {
-        errorAlert.textContent = message;
-        errorAlert.classList.remove('d-none');
+      function setStatus(msg) {
+        els.statusText.textContent = msg;
       }
 
-      function clearError() {
-        errorAlert.classList.add('d-none');
-        errorAlert.textContent = '';
+      function setLoading(isLoading) {
+        state.loading = isLoading;
+        els.grid.setAttribute("aria-busy", String(isLoading));
+        if (isLoading) setStatus("Loading…");
       }
 
       function escapeHtml(str) {
-        return String(str ?? '')
-          .replaceAll('&', '&amp;')
-          .replaceAll('<', '&lt;')
-          .replaceAll('>', '&gt;')
-          .replaceAll('"', '&quot;')
-          .replaceAll("'", '&#039;');
+        return String(str ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
       }
 
       function formatPrice(value) {
-        if (value === null || value === undefined || value === '') return '';
-        const n = Number(value);
-        if (!Number.isFinite(n)) return String(value);
-        return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(n);
+        if (value === null || value === undefined || value === "") return "";
+        if (typeof value === "number") {
+          try { return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(value); }
+          catch { return "$" + value.toFixed(2); }
+        }
+        const s = String(value).trim();
+        // If it's numeric-like, try formatting
+        const n = Number(s);
+        if (!Number.isNaN(n) && s !== "") {
+          try { return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n); }
+          catch { return "$" + n.toFixed(2); }
+        }
+        // Otherwise return as-is (API may already include currency)
+        return s;
       }
 
-      function renderSkeletons(n = 8) {
-        booksGrid.innerHTML = '';
-        for (let i = 0; i < n; i++) {
-          const col = document.createElement('div');
-          col.className = 'col-12 col-sm-6 col-lg-4 col-xl-3';
-          col.innerHTML = `
-            <div class="book-card p-3">
-              <div class="skeleton mb-2" style="height: 18px; width: 80%;"></div>
-              <div class="skeleton mb-3" style="height: 14px; width: 55%;"></div>
-              <div class="skeleton mb-2" style="height: 12px; width: 65%;"></div>
-              <div class="skeleton mb-3" style="height: 12px; width: 45%;"></div>
-              <div class="skeleton" style="height: 32px; width: 40%; border-radius: 999px;"></div>
-            </div>
-          `;
-          booksGrid.appendChild(col);
-        }
+      function normalizeCategory(cat) {
+        if (cat == null) return "";
+        if (typeof cat === "string") return cat;
+        if (typeof cat === "object") return cat.name || cat.title || cat.label || cat.slug || (cat.id != null ? String(cat.id) : "");
+        return String(cat);
       }
 
-      function renderBooks(books) {
-        booksGrid.innerHTML = '';
-        const list = Array.isArray(books) ? books : [];
-        countEl.textContent = list.length;
+      function getItemFields(item) {
+        const title = item.title ?? item.name ?? item.book_title ?? item.display_name ?? "Untitled";
+        const category = normalizeCategory(item.category ?? item.genre ?? item.category_name ?? item.genre_name);
+        const price = item.price ?? item.list_price ?? item.msrp ?? item.cost;
+        const description = item.description ?? item.summary ?? item.subtitle ?? item.blurb ?? "";
+        return { title, category, price, description };
+      }
 
-        if (list.length === 0) {
-          const col = document.createElement('div');
-          col.className = 'col-12';
-          col.innerHTML = `
-            <div class="hero-card p-4 text-center">
-              <div class="h5 mb-2">No books found</div>
-              <div class="soft-muted">Try adjusting your search term or genre filter.</div>
+      function renderSkeletons(count = 8) {
+        const cols = [];
+        for (let i = 0; i < count; i++) {
+          cols.push(`
+            <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+              <div class="skeleton p-3" style="height: 220px;">
+                <div class="skeleton mb-3" style="height: 18px; width: 70%; border:0;"></div>
+                <div class="skeleton mb-2" style="height: 14px; width: 45%; border:0;"></div>
+                <div class="skeleton mb-3" style="height: 14px; width: 85%; border:0;"></div>
+                <div class="skeleton" style="height: 14px; width: 65%; border:0;"></div>
+                <div class="skeleton mt-4" style="height: 34px; width: 40%; border:0;"></div>
+              </div>
             </div>
-          `;
-          booksGrid.appendChild(col);
-          return;
+          `);
         }
+        els.grid.innerHTML = cols.join("");
+      }
 
-        for (const b of list) {
-          const title = escapeHtml(b.title ?? 'Untitled');
-          const author = escapeHtml(b.author ?? 'Unknown author');
-          const genre = escapeHtml(b.genre ?? 'General');
-          const price = formatPrice(b.price ?? '');
+      function renderItems(items) {
+        const arr = Array.isArray(items) ? items : [];
+        els.emptyState.classList.toggle("d-none", arr.length !== 0);
 
-          const col = document.createElement('div');
-          col.className = 'col-12 col-sm-6 col-lg-4 col-xl-3';
+        const cards = arr.map((item) => {
+          const { title, category, price, description } = getItemFields(item);
+          const safeTitle = escapeHtml(title);
+          const safeCategory = escapeHtml(category || "Uncategorized");
+          const safeDesc = escapeHtml(description || "No description provided.");
+          const prettyPrice = formatPrice(price);
+          const priceLine = prettyPrice ? `<div class="fw-semibold">${escapeHtml(prettyPrice)}</div>` : `<div class="text-muted">Price unavailable</div>`;
 
-          col.innerHTML = `
-            <div class="card book-card h-100">
-              <div class="card-body d-flex flex-column">
-                <h5 class="card-title mb-2">${title}</h5>
-                <div class="book-meta small mb-3">
-                  <div><span class="text-white-50">Author:</span> ${author}</div>
-                  <div><span class="text-white-50">Genre:</span> ${genre}</div>
-                </div>
-                <div class="mt-auto d-flex align-items-center justify-content-between gap-2">
-                  <span class="badge rounded-pill text-bg-primary">${escapeHtml(price || '—')}</span>
-                  <span class="badge rounded-pill badge-soft">In stock</span>
+          return `
+            <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+              <div class="card rounded-4 overflow-hidden">
+                <div class="card-body d-flex flex-column">
+                  <div class="d-flex align-items-start justify-content-between gap-2">
+                    <h3 class="h6 mb-1">${safeTitle}</h3>
+                    <span class="badge badge-soft rounded-pill flex-shrink-0">${safeCategory}</span>
+                  </div>
+                  <div class="mt-2">${priceLine}</div>
+                  <p class="mt-2 mb-3 text-muted" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">
+                    ${safeDesc}
+                  </p>
+                  <div class="mt-auto d-flex justify-content-between align-items-center gap-2">
+                    <div class="text-muted small">${safeCategory}</div>
+                    <button class="btn btn-sm btn-outline-light" type="button" data-item='${escapeHtml(JSON.stringify(item))}'>Details</button>
+                  </div>
                 </div>
               </div>
             </div>
           `;
-          booksGrid.appendChild(col);
-        }
+        });
+
+        els.grid.innerHTML = cards.join("");
       }
 
-      function buildBooksUrl() {
-        const term = searchInput.value.trim();
-        const genre = genreSelect.value;
-
-        const url = new URL('/api/books', window.location.origin);
-        if (term) url.searchParams.set('search', term);
-        if (genre) url.searchParams.set('genre', genre);
-        return url.toString();
+      function setLastRequest(url) {
+        state.lastUrl = url;
+        els.lastRequest.textContent = "GET " + url;
       }
 
-      async function fetchJson(url, { signal } = {}) {
-        const res = await fetch(url, { headers: { 'Accept': 'application/json' }, signal });
+      function buildItemsUrl() {
+        const params = new URLSearchParams();
+        if (state.search) params.set("search", state.search);
+        // Category param name is not specified by PRD; attempt common names.
+        if (state.category) params.set("category", state.category);
+
+        const qs = params.toString();
+        return "/api/items" + (qs ? ("?" + qs) : "");
+      }
+
+      async function fetchJson(url) {
+        const res = await fetch(url, { headers: { "Accept": "application/json" } });
+        const text = await res.text();
+        let data;
+        try { data = text ? JSON.parse(text) : null; }
+        catch { data = text; }
+
         if (!res.ok) {
-          let extra = '';
-          try { extra = await res.text(); } catch {}
-          throw new Error(`Request failed (${res.status} ${res.statusText})${extra ? `: ${extra}` : ''}`);
+          const msg = (data && (data.error || data.message)) ? (data.error || data.message) : ("Request failed: " + res.status);
+          throw new Error(msg);
         }
-        return await res.json();
+        return data;
       }
 
-      async function loadGenres() {
+      function extractArray(payload) {
+        if (Array.isArray(payload)) return payload;
+        if (!payload || typeof payload !== "object") return [];
+        return payload.items || payload.results || payload.data || [];
+      }
+
+      function fillCategorySelect(selectEl, categories) {
+        const current = selectEl.value;
+        const opts = ['<option value="">All categories</option>'];
+
+        categories.forEach((c) => {
+          const value = (typeof c === "string") ? c : (c.id ?? c.slug ?? c.name ?? c.title ?? c.label);
+          const label = (typeof c === "string") ? c : (c.name ?? c.title ?? c.label ?? String(value ?? ""));
+          if (value == null) return;
+          opts.push(`<option value="${escapeHtml(String(value))}">${escapeHtml(String(label))}</option>`);
+        });
+
+        selectEl.innerHTML = opts.join("");
+        // restore if possible
+        if (current && Array.from(selectEl.options).some(o => o.value === current)) selectEl.value = current;
+      }
+
+      async function loadCategories() {
         try {
-          const genres = await fetchJson('/api/genres');
-          const list = Array.isArray(genres) ? genres : [];
-          // Preserve current selection if possible
-          const current = genreSelect.value;
+          const payload = await fetchJson("/api/categories");
+          const cats = extractArray(payload);
+          state.categories = cats;
 
-          // Remove all except first "All genres"
-          while (genreSelect.options.length > 1) genreSelect.remove(1);
+          fillCategorySelect(els.categorySelect, cats);
+          fillCategorySelect(els.categorySelect2, cats);
 
-          for (const g of list) {
-            const value = (typeof g === 'string') ? g : (g?.name ?? g?.genre ?? '');
-            if (!value) continue;
-            const opt = document.createElement('option');
-            opt.value = value;
-            opt.textContent = value;
-            genreSelect.appendChild(opt);
-          }
-
-          if (current) genreSelect.value = current;
+          setStatus("Categories loaded.");
         } catch (e) {
-          // Non-fatal
-          console.warn('Failed to load genres:', e);
+          setStatus("Categories unavailable.");
+          // Leave defaults; no hard failure.
         }
       }
 
-      async function loadBooks() {
-        clearError();
-
-        if (lastController) lastController.abort();
-        lastController = new AbortController();
-
-        const url = buildBooksUrl();
+      async function loadItems() {
+        const url = buildItemsUrl();
+        setLastRequest(url);
+        setLoading(true);
         renderSkeletons(8);
-        setStatus('Loading…', 'badge rounded-pill text-bg-info');
 
         try {
-          const data = await fetchJson(url, { signal: lastController.signal });
-          renderBooks(data);
-          setStatus('Updated', 'badge rounded-pill text-bg-success');
+          const payload = await fetchJson(url);
+          const items = extractArray(payload);
+          state.items = items;
+
+          renderItems(items);
+          setStatus(items.length ? `Showing ${items.length} item(s).` : "No results.");
         } catch (e) {
-          if (e.name === 'AbortError') return;
-          console.error(e);
-          booksGrid.innerHTML = '';
-          countEl.textContent = '0';
-          setStatus('Error', 'badge rounded-pill text-bg-danger');
-          showError(e.message || 'Failed to load books.');
+          els.grid.innerHTML = `
+            <div class="col-12">
+              <div class="hero-card rounded-4 p-4">
+                <div class="h5 mb-2">Couldn’t load items</div>
+                <div class="muted mb-3">${escapeHtml(e.message || "Unknown error")}</div>
+                <div class="d-flex flex-wrap gap-2">
+                  <button class="btn btn-primary" type="button" id="retryBtn">Retry</button>
+                  <a class="btn btn-outline-light" href="#how">View endpoints</a>
+                </div>
+              </div>
+            </div>
+          `;
+          const retry = document.getElementById("retryBtn");
+          if (retry) retry.addEventListener("click", () => loadItems());
+          setStatus("Error loading items.");
+        } finally {
+          setLoading(false);
         }
       }
 
-      function scheduleLoadBooks(delayMs = 250) {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(loadBooks, delayMs);
+      function syncControlsFromState() {
+        els.searchInput.value = state.search;
+        els.searchInput2.value = state.search;
+
+        els.categorySelect.value = state.category || "";
+        els.categorySelect2.value = state.category || "";
       }
 
-      // Events
-      searchInput.addEventListener('input', () => scheduleLoadBooks(250));
-      searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          scheduleLoadBooks(0);
-        }
-      });
+      function syncStateFromControls(source) {
+        const searchVal = (source === 1 ? els.searchInput.value : els.searchInput2.value).trim();
+        const catVal = (source === 1 ? els.categorySelect.value : els.categorySelect2.value);
 
-      genreSelect.addEventListener('change', () => scheduleLoadBooks(0));
+        state.search = searchVal;
+        state.category = catVal;
 
-      clearBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        genreSelect.value = '';
-        scheduleLoadBooks(0);
-        searchInput.focus();
-      });
+        syncControlsFromState();
+      }
 
-      refreshBtn.addEventListener('click', async () => {
-        setStatus('Refreshing…', 'badge rounded-pill text-bg-info');
-        await loadGenres();
-        await loadBooks();
-      });
+      function clearAll() {
+        state.search = "";
+        state.category = "";
+        syncControlsFromState();
+      }
 
-      // Initial load
-      (async function init() {
-        await loadGenres();
-        await loadBooks();
-      })();
+      function openDetailsModal(item) {
+        const { title, category, price, description } = getItemFields(item);
+        const prettyPrice = formatPrice(price);
+
+        const jsonPreview = JSON.stringify(item, null, 2);
+
+        const modalId = "detailsModal";
+        const existing = document.getElementById(modalId);
+        if (existing) existing.remove();
+
+        const modalHtml = `
+          <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+              <div class="modal-content" style="background: rgba(15,23,42,0.98); color:#e5e7eb; border: 1px solid rgba(148,163,184,0.18);">
+                <div class="modal-header" style="border-color: rgba(148,163,184,0.14);">
+                  <div>
+                    <h5 class="modal-title mb-1">${escapeHtml(title)}</h5>
+                    <div class="small muted">
+                      <span class="badge badge-soft rounded-pill me-2">${escapeHtml(category || "Uncategorized")}</span>
+                      ${prettyPrice ? escapeHtml(prettyPrice) : "Price unavailable"}
+                    </div>
+                  </div>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <h6 class="text-uppercase muted small">Description</h6>
+                  <p class="mb-4">${escapeHtml(description || "No description provided.")}</p>
+
+                  <h6 class="text-uppercase muted small">Raw item payload</h6>
+                  <pre class="mb-0 p-3 rounded-3" style="background: rgba(2,6,23,0.65); border: 1px solid rgba(148,163,184,0.18); color: rgba(226,232,240,0.92); overflow:auto;"><code>${escapeHtml(jsonPreview)}</code></pre>
+                </div>
+                <div class="modal-footer" style="border-color: rgba(148,163,184,0.14);">
+                  <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.insertAdjacentHTML("beforeend", modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById(modalId));
+        modal.show();
+      }
+
+      function attachGridHandler() {
+        els.grid.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-item]");
+          if (!btn) return;
+          try {
+            const item = JSON.parse(btn.getAttribute("data-item"));
+            openDetailsModal(item);
+          } catch {
+            showToast("Unable to open details for this item.");
+          }
+        });
+      }
+
+      function initShortcuts() {
+        window.addEventListener("keydown", (e) => {
+          // Focus search with /
+          if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            const active = document.activeElement;
+            const inInput = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable);
+            if (!inInput) {
+              e.preventDefault();
+              els.searchInput2.focus();
+            }
+          }
+          // Escape clears focus
+          if (e.key === "Escape") {
+            const active = document.activeElement;
+            if (active && (active.tagName === "INPUT" || active.tagName === "SELECT")) active.blur();
+          }
+        });
+      }
+
+      function wireEvents() {
+        // Hero controls
+        els.searchBtn.addEventListener("click", () => { syncStateFromControls(1); loadItems(); });
+        els.clearBtn.addEventListener("click", () => { clearAll(); loadItems(); showToast("Filters cleared."); });
+        els.searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { syncStateFromControls(1); loadItems(); } });
+        els.categorySelect.addEventListener("change", () => { syncStateFromControls(1); loadItems(); });
+
+        // Catalogue controls
+        els.applyBtn.addEventListener("click", () => { syncStateFromControls(2); loadItems(); });
+        els.resetBtn.addEventListener("click", () => { clearAll(); loadItems(); showToast("Reset."); });
+        els.emptyResetBtn.addEventListener("click", () => { clearAll(); loadItems(); });
+        els.searchInput2.addEventListener("keydown", (e) => { if (e.key === "Enter") { syncStateFromControls(2); loadItems(); } });
+        els.categorySelect2.addEventListener("change", () => { syncStateFromControls(2); loadItems(); });
+
+        // Refresh
+        els.refreshBtn.addEventListener("click", async () => {
+          showToast("Refreshing…");
+          await loadCategories();
+          await loadItems();
+        });
+      }
+
+      async function init() {
+        els.year.textContent = new Date().getFullYear();
+        attachGridHandler();
+        initShortcuts();
+        wireEvents();
+
+        // initial sync
+        syncControlsFromState();
+        await loadCategories();
+        await loadItems();
+      }
+
+      init();
     })();
   </script>
 </body>
