@@ -1,53 +1,34 @@
 @startuml
-title Online Bookstore - Browse and Purchase Book (Sequence)
+title Public Catalogue: Customer Browse/Search -> View Book Detail (Happy Path)
 
-actor User
-participant Browser
-participant FlaskAPI
-database DataStore
+actor Customer as U
+participant "Web Browser" as B
+participant "Catalogue Web App" as W
+participant "REST API (v1)" as API
+database "Inventory DB" as DB
 
-== Load Homepage ==
-User -> Browser: Navigate to /
-Browser -> FlaskAPI: GET /
-FlaskAPI -> DataStore: Query featured books/categories
-DataStore --> FlaskAPI: Featured list
-FlaskAPI --> Browser: 200 OK (Homepage HTML + data)
-Browser --> User: Render homepage
+U -> B: Open catalogue page
+B -> W: GET /catalogue
+W -> API: GET /api/v1/genres\nGET /api/v1/authors (for filters)
+API -> DB: SELECT genres, authors (active)
+DB --> API: Genres + Authors
+API --> W: Filter metadata
+W --> B: Render catalogue + filters
 
-== Search Books ==
-User -> Browser: Enter search query + submit
-Browser -> FlaskAPI: GET /search?q=...
-FlaskAPI -> DataStore: Search books by query
-DataStore --> FlaskAPI: Matching results
-FlaskAPI --> Browser: 200 OK (Search results)
-Browser --> User: Render results
+U -> B: Enter keyword + select genre/author filters\n+ sort/pagination
+B -> W: GET /catalogue?q=...&genres=...&authors=...&sort=...&page=1
+W -> API: GET /api/v1/books?q=...&genres=...&authors=...&sort=...&page=1
+API -> DB: Query books by title/author + filters\nORDER BY + LIMIT/OFFSET
+DB --> API: Books page + total count
+API --> W: 200 OK\n{items[], page, pageSize, total}
+W --> B: Render results list + pagination
 
-== View Book Detail ==
-User -> Browser: Click a book
-Browser -> FlaskAPI: GET /books/{bookId}
-FlaskAPI -> DataStore: Fetch book details by id
-DataStore --> FlaskAPI: Book details + availability
-FlaskAPI --> Browser: 200 OK (Book detail page)
-Browser --> User: Render details
-
-== Add to Cart ==
-User -> Browser: Click "Add to Cart"
-Browser -> FlaskAPI: POST /cart/items {bookId, qty}
-FlaskAPI -> DataStore: Create/lookup cart for session/user
-DataStore --> FlaskAPI: Cart id
-FlaskAPI -> DataStore: Add/update cart item
-DataStore --> FlaskAPI: Updated cart
-FlaskAPI --> Browser: 200 OK (Cart summary)
-Browser --> User: Show cart updated
-
-== Checkout ==
-User -> Browser: Proceed to checkout
-Browser -> FlaskAPI: POST /checkout {shipping, payment}
-FlaskAPI -> DataStore: Validate cart + compute totals
-DataStore --> FlaskAPI: Cart items + totals
-FlaskAPI -> DataStore: Create order + reserve/decrement inventory
-DataStore --> FlaskAPI: Order confirmation (orderId)
-FlaskAPI --> Browser: 200 OK (Confirmation page)
-Browser --> User: Display order confirmation
+U -> B: Click a book result
+B -> W: GET /books/{bookId}
+W -> API: GET /api/v1/books/{bookId}
+API -> DB: SELECT book + authors + genres + availability
+DB --> API: Book detail record
+API --> W: 200 OK\n{book, authors, genres, availability}
+W --> B: Render book detail page
 
 @enduml

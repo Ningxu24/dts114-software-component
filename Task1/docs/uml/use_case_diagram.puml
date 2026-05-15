@@ -3,7 +3,7 @@ actor Customer
 actor Developer
 actor Librarian
 
-rectangle "Book Catalogue REST Platform" {
+rectangle "Book Catalog REST Portal" {
   usecase "Search books" as SearchBooks
   usecase "Filter results" as FilterResults
   usecase "Sort results" as SortResults
@@ -12,19 +12,16 @@ rectangle "Book Catalogue REST Platform" {
 
   usecase "Query books API" as QueryBooksApi
   usecase "Validate request" as ValidateRequest
-  usecase "Return error schema" as ReturnErrorSchema
-
+  usecase "Return API errors" as ReturnApiErrors
   usecase "Authenticate API key" as AuthenticateApiKey
   usecase "Enforce rate limits" as EnforceRateLimits
-  usecase "Return retry guidance" as ReturnRetryGuidance
 
   usecase "Manage books" as ManageBooks
   usecase "Manage authors" as ManageAuthors
   usecase "Manage genres" as ManageGenres
   usecase "Check duplicates" as CheckDuplicates
-  usecase "Validate data" as ValidateData
   usecase "Record audit log" as RecordAuditLog
-  usecase "Deactivate record" as DeactivateRecord
+  usecase "Deactivate records" as DeactivateRecords
 }
 
 Customer -- SearchBooks
@@ -32,39 +29,32 @@ Customer -- ViewBookDetails
 
 Developer -- QueryBooksApi
 Developer -- AuthenticateApiKey
+Developer -- EnforceRateLimits
 
 Librarian -- ManageBooks
 Librarian -- ManageAuthors
 Librarian -- ManageGenres
 
-SearchBooks ..> FilterResults : <<include>>
-SearchBooks ..> SortResults : <<include>>
-SearchBooks ..> PaginateResults : <<include>>
-SearchBooks ..> ViewBookDetails : <<extend>>
+SearchBooks .> FilterResults : <<include>>
+SearchBooks .> SortResults : <<include>>
+SearchBooks .> PaginateResults : <<include>>
+ViewBookDetails .> SearchBooks : <<extend>>
 
-QueryBooksApi ..> FilterResults : <<include>>
-QueryBooksApi ..> SortResults : <<include>>
-QueryBooksApi ..> PaginateResults : <<include>>
-QueryBooksApi ..> ValidateRequest : <<include>>
-ValidateRequest ..> ReturnErrorSchema : <<extend>>
+QueryBooksApi .> ValidateRequest : <<include>>
+QueryBooksApi .> PaginateResults : <<include>>
+ValidateRequest .> ReturnApiErrors : <<extend>>
+QueryBooksApi .> AuthenticateApiKey : <<include>>
+QueryBooksApi .> EnforceRateLimits : <<include>>
 
-QueryBooksApi ..> AuthenticateApiKey : <<include>>
-AuthenticateApiKey ..> EnforceRateLimits : <<include>>
-EnforceRateLimits ..> ReturnRetryGuidance : <<extend>>
+ManageBooks .> CheckDuplicates : <<include>>
+ManageAuthors .> CheckDuplicates : <<include>>
+ManageGenres .> CheckDuplicates : <<include>>
 
-ManageBooks ..> ValidateData : <<include>>
-ManageAuthors ..> ValidateData : <<include>>
-ManageGenres ..> ValidateData : <<include>>
+ManageBooks .> RecordAuditLog : <<include>>
+ManageAuthors .> RecordAuditLog : <<include>>
+ManageGenres .> RecordAuditLog : <<include>>
 
-ManageBooks ..> CheckDuplicates : <<include>>
-ManageAuthors ..> CheckDuplicates : <<include>>
-ManageGenres ..> CheckDuplicates : <<include>>
-
-ManageBooks ..> RecordAuditLog : <<include>>
-ManageAuthors ..> RecordAuditLog : <<include>>
-ManageGenres ..> RecordAuditLog : <<include>>
-
-ManageBooks ..> DeactivateRecord : <<extend>>
-ManageAuthors ..> DeactivateRecord : <<extend>>
-ManageGenres ..> DeactivateRecord : <<extend>>
+ManageBooks .> DeactivateRecords : <<extend>>
+ManageAuthors .> DeactivateRecords : <<extend>>
+ManageGenres .> DeactivateRecords : <<extend>>
 @enduml

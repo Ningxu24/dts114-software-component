@@ -3,72 +3,75 @@ skinparam classAttributeIconSize 0
 
 class Book {
   +id: UUID
-  +isbn: String
   +title: String
-  +author: String
-  +description: String
-  +price: Decimal
-  +stockQty: int
-  +publishedAt: Date
-  +isActive: boolean
+  +description: Text
+  +isbn13: String
+  +publishedDate: Date
+  +availabilityStatus: AvailabilityStatus
+  +isActive: Boolean
+  +createdAt: DateTime
+  +updatedAt: DateTime
+}
+
+class Author {
+  +id: UUID
+  +displayName: String
+  +sortName: String
+  +bio: Text
+  +isActive: Boolean
+  +createdAt: DateTime
+  +updatedAt: DateTime
 }
 
 class Genre {
   +id: UUID
   +name: String
   +slug: String
-}
-
-class User {
-  +id: UUID
-  +email: String
-  +passwordHash: String
-  +fullName: String
-  +phone: String
-  +createdAt: DateTime
-  +isActive: boolean
-}
-
-class Cart {
-  +id: UUID
+  +isActive: Boolean
   +createdAt: DateTime
   +updatedAt: DateTime
 }
 
-class Order {
+class ApiClient {
   +id: UUID
-  +orderNumber: String
-  +status: OrderStatus
-  +subtotal: Decimal
-  +tax: Decimal
-  +shipping: Decimal
-  +total: Decimal
-  +placedAt: DateTime
+  +name: String
+  +apiKeyHash: String
+  +isActive: Boolean
+  +rateLimitPerMinute: Int
+  +createdAt: DateTime
+  +lastUsedAt: DateTime?
 }
 
-class OrderItem {
+class AuditLogEntry {
   +id: UUID
-  +quantity: int
-  +unitPrice: Decimal
-  +lineTotal: Decimal
+  +actorType: ActorType
+  +actorId: String
+  +action: String
+  +entityType: String
+  +entityId: UUID
+  +beforeJson: Json?
+  +afterJson: Json?
+  +occurredAt: DateTime
 }
 
-enum OrderStatus {
-  PENDING
-  PAID
-  SHIPPED
-  DELIVERED
-  CANCELLED
-  REFUNDED
+enum AvailabilityStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+  PREORDER
+  DISCONTINUED
+}
+
+enum ActorType {
+  STAFF
+  API_CLIENT
 }
 
 ' Relationships
-Genre "1" <-- "*" Book : belongs to
-User "1" *-- "1" Cart : owns
-User "1" o-- "*" Order : places
+Book "0..*" -- "0..*" Author : written by
+Book "0..*" -- "0..*" Genre : categorized as
 
-Cart "1" *-- "*" OrderItem : contains
-Order "1" *-- "*" OrderItem : includes
-
-Book "1" <-- "*" OrderItem : for
+ApiClient "1" *-- "0..*" AuditLogEntry : logs
+Book "1" o-- "0..*" AuditLogEntry : changes
+Author "1" o-- "0..*" AuditLogEntry : changes
+Genre "1" o-- "0..*" AuditLogEntry : changes
 @enduml
