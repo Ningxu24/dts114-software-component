@@ -13,7 +13,7 @@ Put your screenshots in these folders:
 
 4) Task2/evidence/04_live_api/
    - Live website home page
-   - Live API JSON result page (/api/books)
+   - Live API JSON result page (/api/items)
 
 Deployment URL:
 https://dts114-software-component.onrender.com
