@@ -1,0 +1,52 @@
+@startuml
+actor Customer
+actor "Store Manager" as StoreManager
+actor Developer
+
+rectangle "Online Bookstore" {
+  usecase "Browse catalogue" as BrowseCatalogue
+  usecase "Paginate results" as PaginateResults
+  usecase "Sort catalogue" as SortCatalogue
+
+  usecase "Search books" as SearchBooks
+  usecase "Filter books" as FilterBooks
+
+  usecase "View book details" as ViewBookDetails
+  usecase "View availability status" as ViewAvailabilityStatus
+
+  usecase "Manage catalogue data" as ManageCatalogueData
+  usecase "Validate catalogue entries" as ValidateCatalogueEntries
+  usecase "Record audit trail" as RecordAuditTrail
+
+  usecase "Use book API" as UseBookApi
+  usecase "Authenticate API key" as AuthenticateApiKey
+  usecase "Enforce rate limits" as EnforceRateLimits
+  usecase "Paginate API results" as PaginateApiResults
+  usecase "Sort API results" as SortApiResults
+  usecase "Search API books" as SearchApiBooks
+  usecase "Filter API books" as FilterApiBooks
+}
+
+Customer -- BrowseCatalogue
+Customer -- SearchBooks
+Customer -- ViewBookDetails
+
+BrowseCatalogue ..> PaginateResults : <<include>>
+BrowseCatalogue ..> SortCatalogue : <<include>>
+
+SearchBooks ..> FilterBooks : <<extend>>
+
+ViewBookDetails ..> ViewAvailabilityStatus : <<include>>
+
+StoreManager -- ManageCatalogueData
+ManageCatalogueData ..> ValidateCatalogueEntries : <<include>>
+ManageCatalogueData ..> RecordAuditTrail : <<include>>
+
+Developer -- UseBookApi
+UseBookApi ..> AuthenticateApiKey : <<include>>
+UseBookApi ..> EnforceRateLimits : <<include>>
+UseBookApi ..> PaginateApiResults : <<include>>
+UseBookApi ..> SortApiResults : <<include>>
+UseBookApi ..> SearchApiBooks : <<extend>>
+UseBookApi ..> FilterApiBooks : <<extend>>
+@enduml

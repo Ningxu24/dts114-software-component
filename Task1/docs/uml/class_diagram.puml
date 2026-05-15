@@ -8,7 +8,7 @@ class Book {
   +author: String
   +description: String
   +price: Decimal
-  +stockQuantity: int
+  +stockQty: int
   +publishedAt: Date
   +isActive: boolean
 }
@@ -16,7 +16,7 @@ class Book {
 class Genre {
   +id: UUID
   +name: String
-  +description: String
+  +slug: String
 }
 
 class User {
@@ -24,7 +24,7 @@ class User {
   +email: String
   +passwordHash: String
   +fullName: String
-  +phoneNumber: String
+  +phone: String
   +createdAt: DateTime
   +isActive: boolean
 }
@@ -41,11 +41,9 @@ class Order {
   +status: OrderStatus
   +subtotal: Decimal
   +tax: Decimal
-  +shippingCost: Decimal
+  +shipping: Decimal
   +total: Decimal
-  +createdAt: DateTime
   +placedAt: DateTime
-  +shippingAddress: String
 }
 
 class OrderItem {
@@ -56,20 +54,21 @@ class OrderItem {
 }
 
 enum OrderStatus {
-  DRAFT
-  PLACED
+  PENDING
   PAID
   SHIPPED
   DELIVERED
   CANCELLED
+  REFUNDED
 }
 
 ' Relationships
-Genre "1" <-- "0..*" Book : belongs to
+Genre "1" <-- "*" Book : belongs to
 User "1" *-- "1" Cart : owns
-User "1" -- "0..*" Order : places
-Order "1" *-- "1..*" OrderItem : contains
-Cart "1" *-- "0..*" OrderItem : items
-OrderItem "1" --> "1" Book : for
+User "1" o-- "*" Order : places
 
+Cart "1" *-- "*" OrderItem : contains
+Order "1" *-- "*" OrderItem : includes
+
+Book "1" <-- "*" OrderItem : for
 @enduml

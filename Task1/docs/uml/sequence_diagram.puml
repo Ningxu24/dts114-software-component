@@ -1,5 +1,5 @@
 @startuml
-title Online Bookstore - Browse and Purchase Book
+title Online Bookstore - Browse and Purchase Book (Sequence)
 
 actor User
 participant Browser
@@ -7,43 +7,47 @@ participant FlaskAPI
 database DataStore
 
 == Load Homepage ==
-User -> Browser: Open bookstore URL
+User -> Browser: Navigate to /
 Browser -> FlaskAPI: GET /
 FlaskAPI -> DataStore: Query featured books/categories
-DataStore --> FlaskAPI: Featured books/categories
-FlaskAPI --> Browser: 200 OK (homepage HTML/JSON)
+DataStore --> FlaskAPI: Featured list
+FlaskAPI --> Browser: 200 OK (Homepage HTML + data)
 Browser --> User: Render homepage
 
 == Search Books ==
 User -> Browser: Enter search query + submit
 Browser -> FlaskAPI: GET /search?q=...
-FlaskAPI -> DataStore: Search books (title/author/ISBN)
-DataStore --> FlaskAPI: Search results
-FlaskAPI --> Browser: 200 OK (results)
-Browser --> User: Render results list
+FlaskAPI -> DataStore: Search books by query
+DataStore --> FlaskAPI: Matching results
+FlaskAPI --> Browser: 200 OK (Search results)
+Browser --> User: Render results
 
 == View Book Detail ==
 User -> Browser: Click a book
 Browser -> FlaskAPI: GET /books/{bookId}
-FlaskAPI -> DataStore: Fetch book details + availability
-DataStore --> FlaskAPI: Book details
-FlaskAPI --> Browser: 200 OK (book detail)
-Browser --> User: Render book detail page
+FlaskAPI -> DataStore: Fetch book details by id
+DataStore --> FlaskAPI: Book details + availability
+FlaskAPI --> Browser: 200 OK (Book detail page)
+Browser --> User: Render details
 
 == Add to Cart ==
-User -> Browser: Add to cart (qty)
-Browser -> FlaskAPI: POST /cart/items (bookId, qty)
-FlaskAPI -> DataStore: Validate stock & price; upsert cart item
-DataStore --> FlaskAPI: Cart updated
-FlaskAPI --> Browser: 200 OK (cart summary)
+User -> Browser: Click "Add to Cart"
+Browser -> FlaskAPI: POST /cart/items {bookId, qty}
+FlaskAPI -> DataStore: Create/lookup cart for session/user
+DataStore --> FlaskAPI: Cart id
+FlaskAPI -> DataStore: Add/update cart item
+DataStore --> FlaskAPI: Updated cart
+FlaskAPI --> Browser: 200 OK (Cart summary)
 Browser --> User: Show cart updated
 
 == Checkout ==
 User -> Browser: Proceed to checkout
-Browser -> FlaskAPI: POST /checkout (shipping, payment token)
-FlaskAPI -> DataStore: Create order; reserve/decrement inventory
-DataStore --> FlaskAPI: Order created (orderId, totals)
-FlaskAPI --> Browser: 200 OK (order confirmation)
-Browser --> User: Display confirmation (orderId)
+Browser -> FlaskAPI: POST /checkout {shipping, payment}
+FlaskAPI -> DataStore: Validate cart + compute totals
+DataStore --> FlaskAPI: Cart items + totals
+FlaskAPI -> DataStore: Create order + reserve/decrement inventory
+DataStore --> FlaskAPI: Order confirmation (orderId)
+FlaskAPI --> Browser: 200 OK (Confirmation page)
+Browser --> User: Display order confirmation
 
 @enduml
