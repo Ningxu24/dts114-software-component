@@ -26,3 +26,13 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Course PDFs and local scripts
+CW-*.pdf
+DTS114TC_Coursework.pdf
+ai_in_se_cw.yml
+read_*.py
+textbook/
+textbook_summary.txt
+QA_Preparation.md
+*.pptx
