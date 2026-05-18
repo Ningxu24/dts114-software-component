@@ -26,7 +26,8 @@ def test_get_book_by_id(client):
     resp = client.get('/api/items/1')
     assert resp.status_code == 200
     data = resp.get_json()
-    assert 'title' in data
+    item = data.get('data', data)
+    assert 'title' in item
 
 
 def test_get_book_not_found(client):

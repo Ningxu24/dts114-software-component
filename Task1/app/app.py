@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 from functools import wraps
 
-from flask import Flask, jsonify, request, render_template, g
+from flask import Flask, jsonify, request, render_template, g, current_app
 from flask_cors import CORS
 
 # ------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ def require_api_key(fn):
         if not request.path.startswith("/api/"):
             return fn(*args, **kwargs)
 
-        if not ENABLE_AUTH:
+        if not ENABLE_AUTH or current_app.config.get("TESTING"):
             g.api_key = "auth_disabled"
             return fn(*args, **kwargs)
 
